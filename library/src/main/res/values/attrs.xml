@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SimpleCropView">
+        <attr name="simpleCropViewMaxOutPutSize" format="integer" />
+        <attr name="simpleCropViewBackgroundColorX" format="color" />
+        <attr name="simpleCropViewMarkColor" format="color" />
+    </declare-styleable>
+</resources>
