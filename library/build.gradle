@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 27
@@ -7,6 +8,15 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 27
+    }
+
+    publish {
+        userOrg = 'kuishana'
+        groupId = 'com.kuishana'
+        artifactId = 'simplecropview'
+        publishVersion = '0.0.1'
+        desc = 'A simple image cropper widget for Android.一个简单的Android图像裁剪组件。'
+        website = 'https://github.com/kuishana/SimpleCropView'
     }
 }
 
