@@ -1,4 +1,11 @@
 # SimpleCropView
+一个简单的android图像裁剪组件，简单到就一个[Kotlin](http://kotlinlang.org/)文件，200多行代码。
+## 示例
+先来截两个小鬼，呃。。。一个美女的头像！！！
+![截取头像](https://github.com/Kuishana/SimpleCropView/blob/master/demo11.gif "示例1")
+
+再来裁剪一幅大图，一幅9054x5945的世界地图！！！
+![裁剪图片](https://github.com/Kuishana/SimpleCropView/blob/master/demo22.gif "示例2")
 
 ## License
 
