@@ -46,7 +46,11 @@ class CropActivity : AppCompatActivity() {
                     parcelFileDescriptor?.let {
                         //post，确保simpleCropView大小已确定
                         simpleCropView.post {
-                            simpleCropView.setBitmapRegionDecoder(BitmapRegionDecoder.newInstance(it.fileDescriptor, false))
+                            try {
+                                simpleCropView.setBitmapRegionDecoder(BitmapRegionDecoder.newInstance(it.fileDescriptor, false))
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
                         }
                     }
                 } catch (e: IOException) {
