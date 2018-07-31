@@ -1,5 +1,6 @@
 # SimpleCropView
 一个简单的Android图像裁剪组件，简单到就一个[Kotlin](http://kotlinlang.org/)文件，200多行代码，并支持超大图片高清预览和裁切。
+[CSDN](https://blog.csdn.net/xuanspecial/article/details/81100315)
 ## 示例
 先来截两个小鬼，呃。。。一个美女的头像！！！
 
@@ -13,7 +14,7 @@
 ```
 dependencies {
     ...
-    implementation 'com.kuishana:simplecropview:0.0.1'
+    implementation 'com.kuishana:simplecropview:0.0.2'
 }
 ```
 ## 使用

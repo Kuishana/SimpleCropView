@@ -15,10 +15,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         changeHeadImage.setOnClickListener {
-            val intent = Intent()
-            intent.type = "image/*"
-            intent.action = Intent.ACTION_GET_CONTENT
-            startActivityForResult(intent, REQUEST_CODE_PICK_IMG)
+            Intent().run {
+                type = "image/*"
+                action = Intent.ACTION_GET_CONTENT
+                startActivityForResult(this, REQUEST_CODE_PICK_IMG)
+            }
         }
     }
 
@@ -27,14 +28,15 @@ class MainActivity : AppCompatActivity() {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_CODE_PICK_IMG) {
                 data?.let {
-                    val intent = Intent(this, CropActivity::class.java)
-                    intent.data = it.data
-                    startActivityForResult(intent, REQUEST_CODE_CROP_IMG)
+                    Intent(this, CropActivity::class.java).run {
+                        setData(it.data)
+                        startActivityForResult(this, REQUEST_CODE_CROP_IMG)
+                    }
                 }
             } else if (requestCode == REQUEST_CODE_CROP_IMG) {
-                data?.let {
+                data?.run {
                     headImage.setImageURI(null)
-                    headImage.setImageURI(it.data)
+                    headImage.setImageURI(getData())
                 }
             }
         }

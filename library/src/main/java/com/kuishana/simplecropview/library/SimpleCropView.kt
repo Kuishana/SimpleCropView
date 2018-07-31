@@ -31,7 +31,7 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
     private val renderTread: Thread
 
     private var canRender = false
-    private val drawFilter = PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val antialiasDrawFilter = PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
     private var bitmapRegionDecoder: BitmapRegionDecoder? = null
 
@@ -44,11 +44,12 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
 
     init {
         attributeSet?.let {
-            val attributes = context.obtainStyledAttributes(it, R.styleable.SimpleCropView)
-            maxOutPutSize = attributes.getInteger(R.styleable.SimpleCropView_simpleCropViewMaxOutPutSize, MAX_OUT_PUT_SIZE)
-            backgroundColorX = attributes.getColor(R.styleable.SimpleCropView_simpleCropViewBackgroundColorX, BACKGROUND_COLOR_X)
-            markColor = attributes.getColor(R.styleable.SimpleCropView_simpleCropViewMarkColor, MARK_COLOR)
-            attributes.recycle()
+            context.obtainStyledAttributes(it, R.styleable.SimpleCropView).run {
+                maxOutPutSize = getInteger(R.styleable.SimpleCropView_simpleCropViewMaxOutPutSize, MAX_OUT_PUT_SIZE)
+                backgroundColorX = getColor(R.styleable.SimpleCropView_simpleCropViewBackgroundColorX, BACKGROUND_COLOR_X)
+                markColor = getColor(R.styleable.SimpleCropView_simpleCropViewMarkColor, MARK_COLOR)
+                recycle()
+            }
         }
 
         paintMark.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
@@ -152,12 +153,9 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
      */
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        bitmapRegionDecoder?.let {
-            if (!it.isRecycled) {
-                doRender = true
-                if (!renderTread.isAlive)
-                    renderTread.start()
-            }
+        bitmapRegionDecoder?.takeUnless { it.isRecycled }?.let {
+            doRender = true
+            renderTread.takeUnless { it.isAlive }?.start()
         }
     }
 
@@ -171,39 +169,34 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
             if (canRender) {
                 canRender = false
                 if (surfaceLiving) {
-                    val canvas = holder.lockCanvas()
-                    canvas?.let {
-                        it.drawColor(backgroundColorX)
+                    holder.lockCanvas()?.run {
+                        drawColor(backgroundColorX)
                         if (!movingOrScaling)
-                            it.drawFilter = drawFilter//如果用户正在缩放，不抗锯齿以加快绘制，感觉差别不大
-                        bitmapRegionDecoder?.let {
-                            if (!it.isRecycled && !rectFDstFull.isEmpty) {
+                            drawFilter = antialiasDrawFilter//如果用户正在缩放，不抗锯齿以加快绘制，感觉差别不大
 
-                                //计算要绘制部分
-                                rectFDstShow.set(rectFDstFull)
-                                rectFDstShow.intersect(0.0f, 0.0f, width.toFloat(), height.toFloat())
-                                val scale = it.width / rectFDstFull.width()
-                                rectSrcDraw.set(((rectFDstShow.left - rectFDstFull.left) * scale).toInt(), ((rectFDstShow.top - rectFDstFull.top) * scale).toInt(), ((rectFDstShow.right - rectFDstFull.left) * scale).toInt(), ((rectFDstShow.bottom - rectFDstFull.top) * scale).toInt())
-
-
-                                if (null == bitmap || !rectSrcDraw.isEmpty && rectSrcDraw != rectSrcLast) {
-                                    bitmap?.let { if (!it.isRecycled) it.recycle() }
-                                    options.inSampleSize = if (movingOrScaling) nxtPow2(scale) else prePow2(scale)//如果用户正在缩放就缩略采样，如果缩放完成则高清采样，参见BitmapFactory.Options
-                                    bitmap = it.decodeRegion(rectSrcDraw, options)//rectSrcDraw越大这里越慢，想要极致体验请参考系统照片查看器，看不懂#^_^#
-                                    rectBitmap.set(0, 0, bitmap!!.width, bitmap!!.height)
-                                    rectSrcLast.set(rectSrcDraw)
-                                }
-                                bitmap?.let {
-                                    if (!it.isRecycled)
-                                        canvas.drawBitmap(it, rectBitmap, rectFDstShow, null)
-                                }
+                        bitmapRegionDecoder?.takeUnless { it.isRecycled or rectFDstFull.isEmpty }?.let {
+                            //计算要绘制部分
+                            rectFDstShow.set(rectFDstFull)
+                            rectFDstShow.intersect(0.0f, 0.0f, width.toFloat(), height.toFloat())
+                            val scale = it.width / rectFDstFull.width()
+                            rectSrcDraw.set(((rectFDstShow.left - rectFDstFull.left) * scale).toInt(), ((rectFDstShow.top - rectFDstFull.top) * scale).toInt()
+                                    , ((rectFDstShow.right - rectFDstFull.left) * scale).toInt(), ((rectFDstShow.bottom - rectFDstFull.top) * scale).toInt())
+                            if (null == bitmap || !rectSrcDraw.isEmpty && rectSrcDraw != rectSrcLast) {
+                                bitmap?.takeUnless { it.isRecycled }?.recycle()
+                                options.inSampleSize = if (movingOrScaling) nxtPow2(scale) else prePow2(scale)//如果用户正在缩放就缩略采样，如果缩放完成则高清采样，参见BitmapFactory.Options
+                                bitmap = it.decodeRegion(rectSrcDraw, options)//rectSrcDraw越大这里越慢，想要极致体验请参考系统照片查看器，看不懂#^_^#
+                                rectBitmap.set(0, 0, bitmap!!.width, bitmap!!.height)
+                                rectSrcLast.set(rectSrcDraw)
                             }
+
+                            bitmap?.takeUnless { it.isRecycled }?.let { drawBitmap(it, rectBitmap, rectFDstShow, null) }
                         }
-                        it.saveLayer(0.0f, 0.0f, canvas.width.toFloat(), canvas.height.toFloat(), null, Canvas.ALL_SAVE_FLAG)
-                        it.drawColor(markColor)
-                        it.drawCircle(rectFMark.centerX(), rectFMark.centerY(), rectFMark.width() / 2.0f, paintMark)
-                        it.restore()
-                        holder.unlockCanvasAndPost(canvas)
+
+                        saveLayer(null, null, Canvas.ALL_SAVE_FLAG)
+                        drawColor(markColor)
+                        drawCircle(rectFMark.centerX(), rectFMark.centerY(), rectFMark.width() / 2.0f, paintMark)
+                        restore()
+                        holder.unlockCanvasAndPost(this)
                     }
                 }
             }
@@ -214,7 +207,7 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
      * 使用BitmapRegionDecoder，避免OOM
      */
     fun setBitmapRegionDecoder(bitmapRegionDecoder: BitmapRegionDecoder) {
-        recycle()
+        this.bitmapRegionDecoder?.takeUnless { it.isRecycled }?.recycle()
         this.bitmapRegionDecoder = bitmapRegionDecoder
         val srcWidth = bitmapRegionDecoder.width.toFloat()
         val srcHeight = bitmapRegionDecoder.height.toFloat()
@@ -228,43 +221,30 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
         rectFDstFull.set(0.0f, 0.0f, srcWidth * scale, srcHeight * scale)
         rectFDstFull.offset((width - rectFDstFull.width()) / 2.0f, (height - rectFDstFull.height()) / 2.0f)
         doRender = true
-        if (!renderTread.isAlive)
-            renderTread.start()
+        renderTread.takeUnless { it.isAlive }?.start()
         render()
     }
 
     fun crop(): Bitmap? {
         var bitmapDst: Bitmap? = null
-        bitmapRegionDecoder?.let {
-            if (!it.isRecycled && !rectFMark.isEmpty && rectFDstFull.contains(rectFMark)) {
-                val scale = it.width.toFloat() / rectFDstFull.width()
-                val rect = Rect(((rectFMark.left - rectFDstFull.left) * scale).toInt(), ((rectFMark.top - rectFDstFull.top) * scale).toInt(), ((rectFMark.right - rectFDstFull.left) * scale).toInt(), ((rectFMark.bottom - rectFDstFull.top) * scale).toInt())
-                if (!rect.isEmpty) {
-                    val max = Math.max(rect.width(), rect.height())
-                    //maxOutPutSize过大可能OOM，建议maxOutPutSize<=Math.min(screenWith, screenHeight)*2/3
-                    if (max <= maxOutPutSize) {
-                        bitmapDst = it.decodeRegion(rect, null)
-                    } else {
-                        bitmapDst = Bitmap.createBitmap(maxOutPutSize, maxOutPutSize, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bitmapDst!!)
-                        val dMax = maxOutPutSize * 2
-                        options.inSampleSize = if (max > dMax) nxtPow2(max.toFloat() / dMax.toFloat()) else 1
-                        val bitmap = it.decodeRegion(rect, options)
-                        canvas.drawFilter = drawFilter
-                        canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), Rect(0, 0, maxOutPutSize, maxOutPutSize), null)
-                        bitmap.recycle()
-                    }
-                }
+        bitmapRegionDecoder?.takeUnless { it.isRecycled and rectFMark.isEmpty.not() and rectFDstFull.contains(rectFMark) }?.run {
+            val scale = width.toFloat() / rectFDstFull.width()
+            val rect = Rect(((rectFMark.left - rectFDstFull.left) * scale).toInt(), ((rectFMark.top - rectFDstFull.top) * scale).toInt()
+                    , ((rectFMark.right - rectFDstFull.left) * scale).toInt(), ((rectFMark.bottom - rectFDstFull.top) * scale).toInt())
+            //maxOutPutSize过大可能OOM，建议maxOutPutSize<=Math.min(screenWith, screenHeight)*2/3
+            if (rect.width() <= maxOutPutSize) {
+                bitmapDst = decodeRegion(rect, null)
+            } else {
+                options.inSampleSize = if (rect.width() > maxOutPutSize * 2) nxtPow2(rect.width() / maxOutPutSize / 2.0f) else 1
+                bitmapDst = Bitmap.createBitmap(maxOutPutSize, maxOutPutSize, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmapDst)
+                canvas.drawFilter = antialiasDrawFilter
+                val bitmap = decodeRegion(rect, options)
+                canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), Rect(0, 0, maxOutPutSize, maxOutPutSize), null)
+                bitmap.recycle()
             }
         }
         return bitmapDst
-    }
-
-    fun recycle() {
-        this.bitmapRegionDecoder?.let {
-            if (!it.isRecycled)
-                it.recycle()
-        }
     }
 
     private fun render() {

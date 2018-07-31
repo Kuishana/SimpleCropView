@@ -20,34 +20,33 @@ class CropActivity : AppCompatActivity() {
         setContentView(R.layout.activity_crop)
         back.setOnClickListener { finish() }
         save.setOnClickListener {
-            val bitmap = simpleCropView.crop()
-            bitmap?.let {
+            simpleCropView.crop()?.let {
                 try {
                     val file = File(cacheDir, "temp_file_crop_image")
-                    val fileOutputStream = FileOutputStream(file)
-                    it.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream)//对文件大小有要求可在此压缩
-                    fileOutputStream.flush()
-                    fileOutputStream.close()
-                    val intent = Intent()
-                    intent.data = Uri.fromFile(file)
-                    setResult(Activity.RESULT_OK, intent)
-                    finish()
+                    FileOutputStream(file).run {
+                        it.compress(Bitmap.CompressFormat.JPEG, 100, this)//对文件大小有要求可在此压缩
+                        flush()
+                        close()
+                    }
+                    Intent().run {
+                        data = Uri.fromFile(file)
+                        setResult(Activity.RESULT_OK, this)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
+            finish()
         }
 
-        intent?.let {
-            val uri = it.data
-            uri?.let {
+        intent?.run {
+            data?.let {
                 try {
-                    val parcelFileDescriptor = contentResolver.openFileDescriptor(it, "r")
-                    parcelFileDescriptor?.let {
+                    contentResolver.openFileDescriptor(it, "r").run {
                         //post，确保simpleCropView大小已确定
                         simpleCropView.post {
                             try {
-                                simpleCropView.setBitmapRegionDecoder(BitmapRegionDecoder.newInstance(it.fileDescriptor, false))
+                                simpleCropView.setBitmapRegionDecoder(BitmapRegionDecoder.newInstance(fileDescriptor, false))
                             } catch (e: IOException) {
                                 e.printStackTrace()
                             }

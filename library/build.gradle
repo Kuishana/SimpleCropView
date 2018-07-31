@@ -14,7 +14,7 @@ android {
         userOrg = 'kuishana'
         groupId = 'com.kuishana'
         artifactId = 'simplecropview'
-        publishVersion = '0.0.1'
+        publishVersion = '0.0.2'
         desc = 'A simple image cropper widget for Android.一个简单的Android图像裁剪组件。'
         website = 'https://github.com/kuishana/SimpleCropView'
     }
