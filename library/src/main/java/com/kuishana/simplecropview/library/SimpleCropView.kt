@@ -55,20 +55,7 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
         paintMark.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
         gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
             override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                var x = -distanceX
-                var y = -distanceY
-                if (x + rectFDstFull.left > rectFMark.left) {
-                    x = rectFMark.left - rectFDstFull.left
-                } else if (x + rectFDstFull.right < rectFMark.right) {
-                    x = rectFMark.right - rectFDstFull.right
-                }
-                if (y + rectFDstFull.top > rectFMark.top) {
-                    y = rectFMark.top - rectFDstFull.top
-                } else if (y + rectFDstFull.bottom < rectFMark.bottom) {
-                    y = rectFMark.bottom - rectFDstFull.bottom
-                }
-                rectFDstFull.offset(x, y)
-                render()
+                move(distanceX, distanceY)
                 return true
             }
         })
@@ -141,7 +128,7 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
         val cy = height / 2.0f
         val radius = Math.min(cx, cy) / 2.0f
         rectFMark.set(cx - radius, cy - radius, cx + radius, cy + radius)
-        render()
+        move(0.0f, 0.0f)
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder?) {
@@ -245,6 +232,23 @@ class SimpleCropView(context: Context, attributeSet: AttributeSet?, defStyleAttr
             }
         }
         return bitmapDst
+    }
+
+    private fun move(distanceX: Float, distanceY: Float) {
+        var x = -distanceX
+        var y = -distanceY
+        if (x + rectFDstFull.left > rectFMark.left) {
+            x = rectFMark.left - rectFDstFull.left
+        } else if (x + rectFDstFull.right < rectFMark.right) {
+            x = rectFMark.right - rectFDstFull.right
+        }
+        if (y + rectFDstFull.top > rectFMark.top) {
+            y = rectFMark.top - rectFDstFull.top
+        } else if (y + rectFDstFull.bottom < rectFMark.bottom) {
+            y = rectFMark.bottom - rectFDstFull.bottom
+        }
+        rectFDstFull.offset(x, y)
+        render()
     }
 
     private fun render() {

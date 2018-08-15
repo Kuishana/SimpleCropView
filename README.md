@@ -15,7 +15,7 @@
 ```
 dependencies {
     ...
-    implementation 'com.kuishana:simplecropview:0.0.2'
+    implementation 'com.kuishana:simplecropview:0.0.3'
 }
 ```
 ## 使用
